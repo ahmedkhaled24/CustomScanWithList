@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">CustomScanWithList</string>
+
+    <string name="dialog_location_permission_header">Request Location Permission</string>
+    <string name="dialog_camera_permission_header">Request Camera Permission</string>
+    <string name="dialog_location_permission_body">Application needs location permission to perform correctly</string>
+    <string name="dialog_camera_permission_body">Application needs camera permission to perform correctly</string>
+    <string name="dialog_location_permission_positive">I AM SURE</string>
+    <string name="dialog_location_permission_negative">RE-TRY</string>
+    <string name="remove_cart_warning_message">Are you sure you want to remove this item from your cart ?</string>
+    <string name="cart_plus_30_items">We hope you are enjoying your online shopping experience! Due to the large number of products added to your cart, please allow for additional delivery time of up to 60 minutes.</string>
+
+</resources>
