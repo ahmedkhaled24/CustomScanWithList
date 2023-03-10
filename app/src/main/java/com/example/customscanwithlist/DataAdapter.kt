@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class DataAdapter(var arr: MutableList<Long>): RecyclerView.Adapter<DataAdapter.DataViewHolder>() {
+class DataAdapter(var arr: MutableList<DataScan>): RecyclerView.Adapter<DataAdapter.DataViewHolder>() {
 
     class DataViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
 
@@ -20,7 +20,8 @@ class DataAdapter(var arr: MutableList<Long>): RecyclerView.Adapter<DataAdapter.
     }
 
     override fun onBindViewHolder(holder: DataViewHolder, position: Int) {
-        holder.barcodeTv.text = arr[position].toString()
+        holder.barcodeTv.text = arr[position].barcode.toString()
+        holder.countTv.text = arr[position].qty.toString()
     }
 
     override fun getItemCount(): Int {
@@ -29,3 +30,5 @@ class DataAdapter(var arr: MutableList<Long>): RecyclerView.Adapter<DataAdapter.
 
 
 }
+
+data class DataScan(var barcode: Long, var qty: Int? = 1)

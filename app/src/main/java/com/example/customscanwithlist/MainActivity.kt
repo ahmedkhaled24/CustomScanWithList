@@ -7,15 +7,16 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.util.Log
+import android.view.Gravity
 import android.view.SurfaceHolder
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.vision.CameraSource
 import com.google.android.gms.vision.Detector
 import com.google.android.gms.vision.barcode.Barcode
@@ -26,8 +27,7 @@ import java.io.IOException
 private const val TAG = "TAGMainActivity"
 class MainActivity : AppCompatActivity() {
 
-    private var arr: MutableList<Long> = ArrayList()
-    private var size = 0
+    private var arr: MutableList<DataScan> = ArrayList()
     private var barcodeDetector: BarcodeDetector? = null
     private var cameraSource: CameraSource? = null
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
@@ -38,37 +38,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val mainHandler = Handler(Looper.getMainLooper())
-
-        mainHandler.post(object : Runnable {
-            override fun run() {
-                Log.d(TAG, "ruvbvdd cameraStatus: $cameraStatus")
-                Log.d(TAG, "ruvbvdd arr.size: ${arr.size}")
-                Log.d(TAG, "ruvbvdd size: ${size}")
-                if (cameraStatus) {
-
-                    if (size != arr.size) {
-                        setUpAdapter()
-                        size = arr.size
-                        alertDialog()
-                    }
-                }
-                mainHandler.postDelayed(this, 1000)
-            }
-        })
-
-
         cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()){
-            if(it)
+            if(it) {
                 recreate()
-            else
+            } else {
                 showPermissionReason()
+            }
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED )
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ) {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        else
+        } else {
             initialiseDetectorsAndSources()
+        }
     }
 
     private fun initialiseDetectorsAndSources() {
@@ -91,11 +73,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-
-
             override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
             override fun surfaceDestroyed(holder: SurfaceHolder) {
-                stopCamera()
+                cameraSource!!.stop()
             }
         })
 
@@ -107,9 +87,12 @@ class MainActivity : AppCompatActivity() {
             override fun receiveDetections(detections: Detector.Detections<Barcode>) {
                 val barcodes = detections.detectedItems
                 if (barcodes.size() != 0) {
-                    Log.d(TAG, "receiveDetections: ${barcodes.valueAt(0).displayValue}")
-                    arr.add(barcodes.valueAt(0).displayValue.toLong())
-                    stopCamera()
+                    if (cameraStatus){
+                        cameraStatus = false
+                        Log.d(TAG, "receiveDetections: ${barcodes.valueAt(0).displayValue}")
+                        setUpAdapter()
+                        edt()
+                    }
                 }
             }
         })
@@ -133,45 +116,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpAdapter(){
-        val layoutManager = LinearLayoutManager(this)
-        dataAdapter = DataAdapter(arr)
-        recyclerView!!.layoutManager = layoutManager
-        recyclerView!!.adapter = dataAdapter
+        val handler = Handler(Looper.getMainLooper())
+        handler.post {
+            dataAdapter = DataAdapter(arr)
+            recyclerView!!.adapter = dataAdapter
+            alertDialog()
+        }
     }
 
     @SuppressLint("MissingPermission")
     private fun alertDialog(){
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Scanning...")
-
         builder.setPositiveButton("Resume") { dialog, _ ->
-            startCamera()
+            cameraStatus = true
             dialog.dismiss()
         }
-
         builder.setNegativeButton("Close") { dialog, _ ->
-            stopCamera()
+            cameraStatus = false
             dialog.dismiss()
         }
-
         builder.show()
     }
 
-    private fun stopCamera() {
-        cameraStatus = false
-        val handler = Handler(Looper.getMainLooper())
-        handler.post {
-            cameraSource!!.stop()
-        }
+
+    @SuppressLint("SetTextI18n")
+    private fun edt(barcode: Long){
+        val inputEditTextField = EditText(this)
+        inputEditTextField.textSize = 25f
+        inputEditTextField.gravity = Gravity.CENTER
+        inputEditTextField.inputType = InputType.TYPE_CLASS_NUMBER
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Enter the quantity for (${barcode})")
+            .setView(inputEditTextField)
+            .setPositiveButton("Add") { _, _ ->
+                val editTextInput = inputEditTextField.text.toString()
+                if (editTextInput.toInt() != 0){
+                    arr.add(DataScan(barcode, 1))
+                }
+            }
+            .setNegativeButton("Remove", null).create()
+        dialog.show()
     }
 
-    @SuppressLint("MissingPermission")
-    private fun startCamera() {
-        cameraStatus = true
-        val handler = Handler(Looper.getMainLooper())
-        handler.post {
-            cameraSource!!.start()
-            cameraSource!!.start(surfaceView.holder)
-        }
-    }
+
 }
